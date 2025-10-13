@@ -1,16 +1,22 @@
-# Sistema de Avaliação Online
+# Descrição geral do sistema (resumo executivo)
 
-## Descrição
-O sistema permite cadastrar questões, avaliações, usuários e registrar respostas.
+-Sistema de Avaliações Web para ambiente acadêmico/profissional (pode ser adaptado ao domínio do grupo).
 
-## Fluxo de Funcionalidades
-- Cadastro de questões
-- Criação de avaliações
-- Associação de usuários
-- Registro de respostas
+## Funcionalidades principais:
+-Cadastro de usuários (alunos, professores, administradores).
 
-## Relatórios
-- Média geral
-- Ranking
-- Questões com maior índice de erro
-- Evolução temporal
+-Cadastro de questões de diferentes tipos (Múltipla Escolha, Dissertativa / Texto Livre, Numérica).
+
+-Criação de avaliações (descrição, data/hora, duração, curso/disciplina/semestre, indicador se é anônima e se é avaliativa com nota).
+
+-Associação de questões a avaliações com valor (peso/pontos) — mesma questão pode pertencer a várias avaliações.
+
+-Associação de usuários que farão a avaliação (atribuição). Permite controle para garantir que cada usuário só responda uma vez quando necessário.
+
+-Registro das respostas (texto ou opção selecionada) e, quando aplicável, nota por questão.
+
+-Relatórios com tabelas e gráficos: médias por avaliação, comparação entre alunos, evolução temporal (gráfico de linha), distribuição de notas (histograma), ranking, perguntas com maior erro/mais mal respondidas, taxas de participação, etc.
+
+-Painel do professor/administrador com filtros (período, disciplina, turma).
+
+-Suporte a avaliações anônimas (por ex., avaliação docente): respostas não vinculadas diretamente ao usuário -> mecanismo de anonimização.
