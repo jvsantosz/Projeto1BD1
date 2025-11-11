@@ -1,5 +1,7 @@
 # Fluxo de funcionalidades (uso básico)
 
+## Sistema de Avaliações Acadêmicas e Profissionais
+
 -Admin cadastra usuários, cursos/disciplinas e questões (definir tipo e, se MCQ, opções).
 
 -Professor cria avaliação, escolhe questões e atribui pesos. Define período (data/hora início e término), se é anônima e lista de alunos/turmas.
