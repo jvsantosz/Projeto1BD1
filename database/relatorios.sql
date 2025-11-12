@@ -1,5 +1,5 @@
 WITH AvaliacaoTotal AS (
-    -- 1. Calcula a pontuação máxima de cada avaliação
+    -- 1. Valor total de cada avaliação
     SELECT
         aq.id_avaliacao,
         SUM(aq.valor) AS valor_total
@@ -7,33 +7,35 @@ WITH AvaliacaoTotal AS (
     GROUP BY aq.id_avaliacao
 ),
 AlunoPontuacao AS (
-    -- 2. Calcula a pontuação obtida por cada aluno em cada avaliação
+    -- 2. Soma das notas obtidas por aluno em cada avaliação
     SELECT
-        r.id_aluno,
-        r.id_avaliacao,
-        SUM(r.pontos) AS pontos_obtidos
-    FROM resposta r
-    GROUP BY r.id_aluno, r.id_avaliacao
+        a.id_usuario AS id_aluno,
+        a.id_avaliacao,
+        SUM(nr.nota) AS pontos_obtidos
+    FROM atribuicao a
+    JOIN resposta r ON r.id_atribuicao = a.id
+    JOIN nota_resposta nr ON nr.id_resposta = r.id
+    GROUP BY a.id_usuario, a.id_avaliacao
 ),
 AlunoNota AS (
-    -- 3. Combina as duas para calcular a nota percentual de cada avaliação
+    -- 3. Calcula nota percentual por avaliação
     SELECT
         ap.id_aluno,
         ap.id_avaliacao,
-        (ap.pontos_obtidos::decimal / at.valor_total) * 100 AS nota_percentual
+        (ap.pontos_obtidos / at.valor_total) * 100 AS nota_percentual
     FROM AlunoPontuacao ap
     JOIN AvaliacaoTotal at ON ap.id_avaliacao = at.id_avaliacao
 )
--- 4. Nota final por disciplina
+-- 4. Nota final por curso/disciplina
 SELECT
-    a.id_aluno,
-    a.nome AS nome_aluno,
-    d.id_disciplina,
-    d.nome AS nome_disciplina,
-    AVG(an.nota_percentual) AS nota_final_percentual
+    u.id AS id_aluno,
+    u.nome_completo AS nome_aluno,
+    c.id AS id_curso,
+    c.nome AS nome_curso,
+    ROUND(AVG(an.nota_percentual), 2) AS nota_final_percentual
 FROM AlunoNota an
-JOIN avaliacao av ON an.id_avaliacao = av.id_avaliacao
-JOIN disciplina d ON av.id_disciplina = d.id_disciplina
-JOIN aluno a ON an.id_aluno = a.id_aluno
-GROUP BY a.id_aluno, a.nome, d.id_disciplina, d.nome
-ORDER BY a.nome, d.nome;
+JOIN avaliacao av ON an.id_avaliacao = av.id
+JOIN curso c ON av.id_curso = c.id
+JOIN usuario u ON an.id_aluno = u.id
+GROUP BY u.id, u.nome_completo, c.id, c.nome
+ORDER BY u.nome_completo, c.nome;
