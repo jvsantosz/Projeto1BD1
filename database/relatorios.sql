@@ -1,41 +1,49 @@
 WITH AvaliacaoTotal AS (
-    -- 1. Valor total de cada avaliação
     SELECT
         aq.id_avaliacao,
         SUM(aq.valor) AS valor_total
     FROM avaliacao_questao aq
     GROUP BY aq.id_avaliacao
+    HAVING SUM(aq.valor) > 0
 ),
+
 AlunoPontuacao AS (
-    -- 2. Soma das notas obtidas por aluno em cada avaliação
     SELECT
         a.id_usuario AS id_aluno,
         a.id_avaliacao,
-        SUM(nr.nota) AS pontos_obtidos
+        COALESCE(SUM(nr.nota), 0) AS pontos_obtidos
     FROM atribuicao a
-    JOIN resposta r ON r.id_atribuicao = a.id
-    JOIN nota_resposta nr ON nr.id_resposta = r.id
+    LEFT JOIN resposta r ON r.id_atribuicao = a.id
+    LEFT JOIN nota_resposta nr ON nr.id_resposta = r.id
     GROUP BY a.id_usuario, a.id_avaliacao
 ),
+
 AlunoNota AS (
-    -- 3. Calcula nota percentual por avaliação
     SELECT
         ap.id_aluno,
         ap.id_avaliacao,
-        (ap.pontos_obtidos / at.valor_total) * 100 AS nota_percentual
+        CASE 
+            WHEN at.valor_total > 0 THEN 
+                (ap.pontos_obtidos / at.valor_total) * 100
+            ELSE 0 
+        END AS nota_percentual
     FROM AlunoPontuacao ap
-    JOIN AvaliacaoTotal at ON ap.id_avaliacao = at.id_avaliacao
+    JOIN AvaliacaoTotal at ON at.id_avaliacao = ap.id_avaliacao
 )
--- 4. Nota final por curso/disciplina
+
 SELECT
     u.id AS id_aluno,
     u.nome_completo AS nome_aluno,
     c.id AS id_curso,
     c.nome AS nome_curso,
-    ROUND(AVG(an.nota_percentual), 2) AS nota_final_percentual
-FROM AlunoNota an
-JOIN avaliacao av ON an.id_avaliacao = av.id
-JOIN curso c ON av.id_curso = c.id
-JOIN usuario u ON an.id_aluno = u.id
+    ROUND(AVG(an.nota_percentual), 2) AS nota_final_percentual,
+    COUNT(an.id_avaliacao) AS quantidade_avaliacoes
+FROM usuario u
+JOIN atribuicao a ON a.id_usuario = u.id
+JOIN avaliacao av ON av.id = a.id_avaliacao
+JOIN curso c ON c.id = av.id_curso
+JOIN AlunoNota an ON an.id_aluno = u.id 
+                  AND an.id_avaliacao = av.id   -- INNER JOIN correto
+WHERE u.id_papel = (SELECT id FROM papel WHERE nome = 'ALUNO')
 GROUP BY u.id, u.nome_completo, c.id, c.nome
 ORDER BY u.nome_completo, c.nome;
