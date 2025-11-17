@@ -1,125 +1,83 @@
-
 BEGIN;
 
--- Tipos de papéis de usuários
-CREATE TABLE papel (
-  id SERIAL PRIMARY KEY,
-  nome VARCHAR(50) NOT NULL UNIQUE  -- e.g., 'ALUNO','PROFESSOR','ADMIN'
+-- Tabela USUARIOS (não depende de ninguém)
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    nome VARCHAR(180) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    tipo_usuario VARCHAR(50) NOT NULL,
+    data_cadastro TIMESTAMP DEFAULT NOW(),
+    ativo BOOLEAN DEFAULT TRUE
 );
 
--- Usuários do sistema
-CREATE TABLE usuario (
-  id SERIAL PRIMARY KEY,
-  nome_usuario VARCHAR(100) NOT NULL UNIQUE,
-  nome_completo VARCHAR(200),
-  email VARCHAR(200) UNIQUE,
-  senha_hash VARCHAR(200) NOT NULL,
-  criado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  id_papel INTEGER NOT NULL REFERENCES papel(id)
+-- Tabela QUESTOES (depende de usuarios)
+CREATE TABLE questoes (
+    id_questao SERIAL PRIMARY KEY,
+    descricao_questao TEXT NOT NULL,
+    tipo_questao VARCHAR(50) NOT NULL,
+    valor_pontuacao DECIMAL(5,2),
+    feedback_correto TEXT,
+    feedback_incorreto TEXT,
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    id_usuario_criador INTEGER NOT NULL REFERENCES usuarios(id_usuario)
 );
 
--- Cursos / Disciplinas
-CREATE TABLE curso (
-  id SERIAL PRIMARY KEY,
-  codigo VARCHAR(30) UNIQUE,
-  nome VARCHAR(200) NOT NULL,
-  descricao TEXT
+-- Tabela OPCOES_QUESTAO (depende de questoes)
+CREATE TABLE opcoes_questao (
+    id_opcao SERIAL PRIMARY KEY,
+    id_questao INTEGER NOT NULL REFERENCES questoes(id_questao) ON DELETE CASCADE,
+    texto_opcao VARCHAR(255) NOT NULL,
+    eh_correta BOOLEAN NOT NULL DEFAULT FALSE,
+    ordem SMALLINT
 );
 
--- Semestre / Período
-CREATE TABLE semestre (
-  id SERIAL PRIMARY KEY,
-  ano INTEGER NOT NULL CHECK (ano > 2000),
-  periodo VARCHAR(20) NOT NULL -- e.g., '1', '2', '2025-1'
+-- Tabela AVALIACOES (depende de usuarios)
+CREATE TABLE avaliacoes (
+    id_avaliacao SERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    data_inicio TIMESTAMP NOT NULL,
+    data_fim TIMESTAMP,
+    duracao_minutos INTEGER,
+    status VARCHAR(50) NOT NULL DEFAULT 'RASCUNHO',
+    id_usuario_criador INTEGER NOT NULL REFERENCES usuarios(id_usuario),
+    anonima BOOLEAN DEFAULT FALSE,
+    exige_nota BOOLEAN DEFAULT TRUE
 );
 
--- Tipos de questões
-CREATE TABLE tipo_questao (
-  id SERIAL PRIMARY KEY,
-  codigo VARCHAR(30) NOT NULL UNIQUE, -- 'MULTIPLA','TEXTO','NUMERICA'
-  descricao VARCHAR(200)
-);
-
--- Questões
-CREATE TABLE questao (
-  id SERIAL PRIMARY KEY,
-  codigo VARCHAR(50),
-  titulo TEXT NOT NULL,
-  enunciado TEXT NOT NULL,
-  id_tipo_questao INTEGER NOT NULL REFERENCES tipo_questao(id),
-  valor_padrao NUMERIC(6,2) DEFAULT 0,
-  criado_por INTEGER REFERENCES usuario(id),
-  criado_em TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Opções de questão (para múltipla escolha)
-CREATE TABLE opcao_questao (
-  id SERIAL PRIMARY KEY,
-  id_questao INTEGER NOT NULL REFERENCES questao(id) ON DELETE CASCADE,
-  letra CHAR(1) NOT NULL, -- 'A', 'B', 'C'...
-  texto TEXT NOT NULL,
-  correta BOOLEAN DEFAULT FALSE
-);
-CREATE UNIQUE INDEX ux_opcao_questao_letra ON opcao_questao(id_questao, letra);
-
--- Avaliações
-CREATE TABLE avaliacao (
-  id SERIAL PRIMARY KEY,
-  titulo VARCHAR(300) NOT NULL,
-  descricao TEXT,
-  id_curso INTEGER REFERENCES curso(id),
-  id_semestre INTEGER REFERENCES semestre(id),
-  inicio_em TIMESTAMP WITH TIME ZONE,
-  fim_em TIMESTAMP WITH TIME ZONE,
-  duracao_minutos INTEGER,
-  anonima BOOLEAN DEFAULT FALSE,
-  possui_nota BOOLEAN DEFAULT TRUE,
-  criada_por INTEGER REFERENCES usuario(id),
-  criada_em TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Associação Avaliação <-> Questão
+-- Tabela AVALIACAO_QUESTAO (depende de avaliacoes e questoes)
 CREATE TABLE avaliacao_questao (
-  id SERIAL PRIMARY KEY,
-  id_avaliacao INTEGER NOT NULL REFERENCES avaliacao(id) ON DELETE CASCADE,
-  id_questao INTEGER NOT NULL REFERENCES questao(id) ON DELETE CASCADE,
-  valor NUMERIC(8,2) NOT NULL DEFAULT 0,
-  ordem INTEGER DEFAULT 0,
-  UNIQUE(id_avaliacao, id_questao)
+    id_avaliacao_questao SERIAL PRIMARY KEY,
+    id_avaliacao INTEGER NOT NULL REFERENCES avaliacoes(id_avaliacao) ON DELETE CASCADE,
+    id_questao INTEGER NOT NULL REFERENCES questoes(id_questao) ON DELETE CASCADE,
+    ordem_na_avaliacao SMALLINT NOT NULL,
+    pontuacao_especifica_na_avaliacao DECIMAL(5,2),
+    UNIQUE(id_avaliacao, id_questao)
 );
 
--- Atribuição de avaliação a usuários
-CREATE TABLE atribuicao (
-  id SERIAL PRIMARY KEY,
-  id_avaliacao INTEGER NOT NULL REFERENCES avaliacao(id) ON DELETE CASCADE,
-  id_usuario INTEGER REFERENCES usuario(id),
-  token UUID NOT NULL DEFAULT gen_random_uuid(),
-  atribuida_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  iniciada_em TIMESTAMP WITH TIME ZONE,
-  enviada_em TIMESTAMP WITH TIME ZONE,
-  status VARCHAR(20) NOT NULL DEFAULT 'ATRIBUIDA', -- 'ATRIBUIDA','EM_ANDAMENTO','ENVIADA'
-  UNIQUE(id_avaliacao, id_usuario)
+-- Tabela USUARIO_AVALIACAO (depende de usuarios e avaliacoes)
+CREATE TABLE usuario_avaliacao (
+    id_usuario_avaliacao SERIAL PRIMARY KEY,
+    id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario),
+    id_avaliacao INTEGER NOT NULL REFERENCES avaliacoes(id_avaliacao),
+    data_inicio_real TIMESTAMP,
+    data_fim_real TIMESTAMP,
+    status_resposta VARCHAR(50) NOT NULL DEFAULT 'ATRIBUIDA',
+    nota_total_obtida DECIMAL(5,2),
+    UNIQUE(id_usuario, id_avaliacao)
 );
 
--- Respostas
-CREATE TABLE resposta (
-  id SERIAL PRIMARY KEY,
-  id_atribuicao INTEGER NOT NULL REFERENCES atribuicao(id) ON DELETE CASCADE,
-  id_questao INTEGER NOT NULL REFERENCES questao(id) ON DELETE CASCADE,
-  resposta_texto TEXT,
-  id_opcao_selecionada INTEGER REFERENCES opcao_questao(id),
-  criada_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE(id_atribuicao, id_questao)
-);
-
--- Notas atribuídas às respostas
-CREATE TABLE nota_resposta (
-  id SERIAL PRIMARY KEY,
-  id_resposta INTEGER NOT NULL REFERENCES resposta(id) ON DELETE CASCADE,
-  id_avaliador INTEGER REFERENCES usuario(id),
-  nota NUMERIC(8,2) NOT NULL,
-  avaliada_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  comentarios TEXT
+-- Tabela RESPOSTAS_QUESTAO (depende de usuario_avaliacao e avaliacao_questao)
+CREATE TABLE respostas_questao (
+    id_resposta_questao SERIAL PRIMARY KEY,
+    id_usuario_avaliacao INTEGER NOT NULL REFERENCES usuario_avaliacao(id_usuario_avaliacao) ON DELETE CASCADE,
+    id_avaliacao_questao INTEGER NOT NULL REFERENCES avaliacao_questao(id_avaliacao_questao) ON DELETE CASCADE,
+    texto_resposta TEXT,
+    id_opcao_selecionada INTEGER REFERENCES opcoes_questao(id_opcao),
+    nota_obtida DECIMAL(5,2),
+    data_resposta TIMESTAMP DEFAULT NOW(),
+    UNIQUE(id_usuario_avaliacao, id_avaliacao_questao)
 );
 
 COMMIT;
