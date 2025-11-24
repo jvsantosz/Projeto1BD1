@@ -1,15 +1,5 @@
 BEGIN;
 
--- 1. DROP de todas as tabelas na ordem correta (por dependências)
-DROP TABLE IF EXISTS respostas_questao CASCADE;
-DROP TABLE IF EXISTS usuario_avaliacao CASCADE;
-DROP TABLE IF EXISTS avaliacao_questao CASCADE;
-DROP TABLE IF EXISTS opcoes_questao CASCADE;
-DROP TABLE IF EXISTS avaliacoes CASCADE;
-DROP TABLE IF EXISTS questoes CASCADE;
-DROP TABLE IF EXISTS usuarios CASCADE;
-
--- 2. Criar tabelas na ORDEM CORRETA de dependências
 
 -- Tabela USUARIOS (não depende de ninguém)
 CREATE TABLE usuarios (
@@ -92,54 +82,5 @@ CREATE TABLE respostas_questao (
 
 COMMIT;
 
--- 3. INSERIR DADOS DE TESTE
 
--- Inserir usuários
-INSERT INTO usuarios (nome, email, senha, tipo_usuario) VALUES 
-('Professor Admin', 'professor@teste.com', '123456', 'PROFESSOR'),
-('Aluno João', 'aluno1@teste.com', '123456', 'ALUNO'),
-('Aluna Maria', 'aluna2@teste.com', '123456', 'ALUNO');
-
--- Inserir questões
-INSERT INTO questoes (descricao_questao, tipo_questao, valor_pontuacao, id_usuario_criador) VALUES 
-('Qual é a capital do Brasil?', 'MULTIPLA', 2.0, 1),
-('Explique o que é POO:', 'TEXTO', 5.0, 1),
-('Quanto é 2 + 2?', 'NUMERICA', 1.0, 1);
-
--- Inserir opções para questão múltipla escolha
-INSERT INTO opcoes_questao (id_questao, texto_opcao, eh_correta, ordem) VALUES 
-(1, 'São Paulo', false, 1),
-(1, 'Rio de Janeiro', false, 2),
-(1, 'Brasília', true, 3),
-(1, 'Salvador', false, 4);
-
--- Inserir avaliação
-INSERT INTO avaliacoes (titulo, descricao, data_inicio, data_fim, id_usuario_criador) VALUES 
-('Avaliação de Geografia', 'Teste sobre capitais brasileiras', NOW(), NOW() + INTERVAL '1 hour', 1);
-
--- Associar questões à avaliação
-INSERT INTO avaliacao_questao (id_avaliacao, id_questao, ordem_na_avaliacao, pontuacao_especifica_na_avaliacao) VALUES 
-(1, 1, 1, 2.0),
-(1, 2, 2, 5.0);
-
--- Atribuir avaliação aos alunos
-INSERT INTO usuario_avaliacao (id_usuario, id_avaliacao, status_resposta) VALUES 
-(2, 1, 'ATRIBUIDA'),
-(3, 1, 'ATRIBUIDA');
-
-COMMIT;
-
--- 4. VERIFICAR se tudo foi criado corretamente
-SELECT 'usuarios' as tabela, COUNT(*) as registros FROM usuarios
-UNION ALL
-SELECT 'questoes', COUNT(*) FROM questoes
-UNION ALL
-SELECT 'opcoes_questao', COUNT(*) FROM opcoes_questao
-UNION ALL
-SELECT 'avaliacoes', COUNT(*) FROM avaliacoes
-UNION ALL
-SELECT 'avaliacao_questao', COUNT(*) FROM avaliacao_questao
-UNION ALL
-SELECT 'usuario_avaliacao', COUNT(*) FROM usuario_avaliacao
-UNION ALL
 SELECT 'respostas_questao', COUNT(*) FROM respostas_questao;
