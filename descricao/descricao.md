@@ -1,8 +1,10 @@
-# Descrição geral do sistema (resumo executivo)
+# Descrição geral do sistema 
 
 -Sistema de Avaliações Web para ambiente acadêmico/profissional
 
 -Foco em relatórios criação de avaliações e questões e edicão
+
+-Obs: feito sem JPA utilizando JDBC
 
 ## Funcionalidades principais:
 -Cadastro de usuários (alunos, professores, administradores).
