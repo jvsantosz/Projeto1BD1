@@ -1,0 +1,41 @@
+Entidade
+Relação
+Tipo
+
+
+
+
+
+
+Usuário → Questões
+cria
+1:N
+Usuário → Avaliações
+cria
+1:N
+Usuário → UsuarioAvaliacao
+realiza
+1:N
+Avaliação → UsuarioAvaliacao
+realizada por vários
+1:N
+Avaliação → AvaliacaoQuestao
+contém questões
+1:N
+Questão → AvaliacaoQuestao
+aparece em avaliações
+1:N
+Questão → OpcoesQuestao
+possui opções
+1:N
+Questão → RespostasQuestao
+tem respostas
+1:N
+UsuarioAvaliacao → RespostasQuestao
+gera respostas
+1:N
+OpcoesQuestao → RespostasQuestao
+opção escolhida
+1:N
+
+
