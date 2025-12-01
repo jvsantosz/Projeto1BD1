@@ -1,90 +1,80 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.example.pjbd1.model.Questao" %>
+<%
+    List<Questao> questoes = (List<Questao>) request.getAttribute("questoes");
+    if (questoes == null) {
+        questoes = new java.util.ArrayList<>();
+    }
+%>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Questões sem Alternativas Corretas</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #dc3545; padding-bottom: 10px; }
-        .btn { padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
-        .questao-item { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-        .questao-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .questao-texto { flex: 1; margin-right: 20px; }
-        .alert-badge { background: #dc3545; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8em; }
-        .acoes { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-small { padding: 5px 10px; font-size: 0.8em; text-decoration: none; border-radius: 4px; }
-        .btn-edit { background: #17a2b8; color: white; }
-        .btn-view { background: #28a745; color: white; }
-        .questao-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; font-size: 0.9em; color: #666; }
+        body { font-family: Arial; margin: 20px; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #dc3545; color: white; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        tr:hover { background: #f5f5f5; }
+        .voltar {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #666;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .alert {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <h1>❌ Questões sem Alternativas Corretas</h1>
-        <a href="/professor/relatorios" class="btn">← Voltar</a>
-    </div>
+<a href="/professor/relatorios" class="voltar">← Voltar</a>
+<h1>❌ Questões sem Alternativas Corretas</h1>
 
-    <c:if test="${not empty questoes}">
-        <div class="alert-badge" style="display: inline-block; margin-bottom: 20px;">
-                ${questoes.size()} questão(ões) encontrada(s)
-        </div>
-
-        <c:forEach items="${questoes}" var="questao">
-            <div class="questao-item">
-                <div class="questao-header">
-                    <div class="questao-texto">
-                        <h3 style="margin: 0 0 10px 0;">${questao.descricaoQuestao}</h3>
-                        <div class="questao-info">
-                            <div><strong>ID:</strong> ${questao.idQuestao}</div>
-                            <div><strong>Tipo:</strong> ${questao.tipoQuestao}</div>
-                            <div><strong>Pontuação:</strong> ${questao.valorPontuacao}</div>
-                            <c:if test="${not empty questao.dataCriacao}">
-                                <div><strong>Criada em:</strong> ${questao.dataCriacao}</div>
-                            </c:if>
-                        </div>
-                    </div>
-                    <div class="alert-badge">SEM CORRETAS</div>
-                </div>
-
-                <div class="acoes">
-                    <a href="/professor/questoes/editar/${questao.idQuestao}" class="btn-small btn-edit">✏️ Editar Questão</a>
-                    <a href="/professor/questoes/${questao.idQuestao}/alternativas" class="btn-small btn-view">🔍 Ver Alternativas</a>
-                </div>
-            </div>
-        </c:forEach>
-
-        <!-- Ações em Lote -->
-        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 20px;">
-            <h4 style="margin: 0 0 10px 0;">⚠️ Ações Recomendadas</h4>
-            <p style="margin: 0 0 10px 0; font-size: 0.9em;">
-                Estas questões não possuem alternativas marcadas como corretas. Isso pode causar problemas nas correções automáticas.
-            </p>
-            <div style="display: flex; gap: 10px;">
-                <a href="/professor/questoes/corrigir-lote" class="btn-small" style="background: #dc3545; color: white;">
-                    🔧 Corrigir em Lote
-                </a>
-                <a href="/professor/questoes/relatorio-completo" class="btn-small" style="background: #6c757d; color: white;">
-                    📋 Relatório Completo
-                </a>
-            </div>
-        </div>
-    </c:if>
-
-    <c:if test="${empty questoes}">
-        <div style="text-align: center; padding: 40px; color: #28a745;">
-            <div style="font-size: 3em;">✅</div>
-            <h3>Todas as questões estão corretas!</h3>
-            <p>Nenhuma questão sem alternativa correta foi encontrada no sistema.</p>
-            <div style="margin-top: 20px;">
-                <a href="/professor/questoes" class="btn" style="background: #28a745;">
-                    📚 Gerenciar Questões
-                </a>
-            </div>
-        </div>
-    </c:if>
+<% if (questoes.isEmpty()) { %>
+<p style="color: #28a745;">✅ Todas as questões estão corretas!</p>
+<% } else { %>
+<div class="alert">
+    <strong>Atenção:</strong> <%= questoes.size() %> questão(ões) sem alternativas corretas
 </div>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Descrição</th>
+        <th>Ação</th>
+    </tr>
+    <% for (Questao questao : questoes) { %>
+    <tr>
+        <td><%= questao.getIdQuestao() %></td>
+        <td>
+            <%= questao.getDescricaoQuestao() != null && questao.getDescricaoQuestao().length() > 100
+                    ? questao.getDescricaoQuestao().substring(0, 100) + "..."
+                    : questao.getDescricaoQuestao() %>
+        </td>
+        <td>
+            <a href="/professor/questoes/editar/<%= questao.getIdQuestao() %>"
+               style="color: #17a2b8; text-decoration: none;">
+                ✏️ Editar
+            </a>
+        </td>
+    </tr>
+    <% } %>
+</table>
+
+<p style="margin-top: 20px; font-size: 0.9em; color: #666;">
+    <strong>Nota:</strong> Estas questões não podem ser avaliadas automaticamente até que
+    uma alternativa seja marcada como correta.
+</p>
+<% } %>
 </body>
 </html>

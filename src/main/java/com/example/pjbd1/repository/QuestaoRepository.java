@@ -168,18 +168,21 @@ public class QuestaoRepository {
 
     public List<Questao> findQuestoesSemOpcoesCorretas() {
         String sql = """
-            SELECT q.* 
-            FROM questoes q
-            WHERE q.id_questao NOT IN (
-                SELECT DISTINCT id_questao 
-                FROM opcoes_questao 
-                WHERE eh_correta = true
-            )
-            AND q.tipo_questao = 'MULTIPLA'
-            ORDER BY q.data_criacao DESC
-        """;
+        SELECT q.*
+        FROM questoes q
+        WHERE q.tipo_questao = 'MULTIPLA_ESCOLHA'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM opcoes_questao oq
+            WHERE oq.id_questao = q.id_questao
+            AND oq.eh_correta = true
+        )
+        ORDER BY q.data_criacao DESC
+    """;
+
         return jdbcTemplate.query(sql, rowMapper);
     }
+
 
     public int contarQuestoesPorUsuario(Long idUsuarioCriador) {
         String sql = "SELECT COUNT(*) FROM questoes WHERE id_usuario_criador = ?";
@@ -196,4 +199,7 @@ public class QuestaoRepository {
     public List<Questao> listarTodas() {
         return findAll();
     }
+
+
+
 }

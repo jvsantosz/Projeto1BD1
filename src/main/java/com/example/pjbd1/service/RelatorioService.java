@@ -81,33 +81,43 @@ public class RelatorioService {
         });
     }
 
-    // ✅ Alunos que responderam TODAS as avaliações atribuídas - CORRIGIDO
     public List<Usuario> getAlunosCompletaramTodasAvaliacoes() {
+        // Primeiro, vamos ver quantas avaliações ativas existem
+        String countAvaliacoes = "SELECT COUNT(*) as total FROM avaliacoes WHERE status = 'ATIVA'";
+        Integer totalAvaliacoes = jdbcTemplate.queryForObject(countAvaliacoes, Integer.class);
+        System.out.println("Total de avaliações ATIVAS no sistema: " + totalAvaliacoes);
+
+        // Query principal
         String sql = """
-            SELECT u.id_usuario, u.nome
-            FROM usuarios u
-            WHERE u.tipo_usuario = 'ALUNO'
-            AND NOT EXISTS (
-                SELECT 1
-                FROM usuario_avaliacao ua
-                WHERE ua.id_usuario = u.id_usuario
-                AND ua.status_resposta != 'CONCLUIDA'
-            )
-            AND EXISTS (
-                SELECT 1 FROM usuario_avaliacao WHERE id_usuario = u.id_usuario
-            )
-        """;
-        return jdbcTemplate.query(sql, new RowMapper<Usuario>() {
+        SELECT 
+            u.id_usuario,
+            u.nome,
+            COUNT(DISTINCT ua.id_avaliacao) as avaliacoes_completadas
+        FROM usuarios u
+        LEFT JOIN usuario_avaliacao ua ON ua.id_usuario = u.id_usuario 
+            AND ua.status_resposta = 'CONCLUIDA'
+        WHERE u.tipo_usuario = 'ALUNO'
+        GROUP BY u.id_usuario, u.nome
+        HAVING COUNT(DISTINCT ua.id_avaliacao) = ?
+    """;
+
+        List<Usuario> alunos = jdbcTemplate.query(sql, new Object[]{totalAvaliacoes}, new RowMapper<Usuario>() {
             @Override
             public Usuario mapRow(ResultSet rs, int rowNum) throws SQLException {
-                Usuario u = new Usuario();
-                u.setIdUsuario(rs.getLong("id_usuario"));
-                u.setNome(rs.getString("nome"));
-                return u;
+                Usuario usuario = new Usuario();
+                usuario.setIdUsuario(rs.getLong("id_usuario"));
+                usuario.setNome(rs.getString("nome"));
+
+                int completadas = rs.getInt("avaliacoes_completadas");
+                System.out.println("DEBUG: " + usuario.getNome() + " completou " + completadas + "/" + totalAvaliacoes + " avaliações");
+
+                return usuario;
             }
         });
-    }
 
+        System.out.println("Total de alunos que completaram todas: " + alunos.size());
+        return alunos;
+    }
     // ⏰ Avaliações com tempo de duração ACIMA da média - CORRIGIDO
     public List<Avaliacao> getAvaliacoesAcimaMediaDuracao() {
         String sql = """
@@ -230,25 +240,33 @@ public class RelatorioService {
         });
     }
 
-    // ⭐ Alunos que tiraram 100% em TODAS as Avaliações - CORRIGIDO
     public List<Usuario> getAlunosNotaMaximaTodasAvaliacoes() {
         String sql = """
-            SELECT u.id_usuario, u.nome
-            FROM usuarios u
-            WHERE u.tipo_usuario = 'ALUNO'
-            AND NOT EXISTS (
-                SELECT 1
-                FROM usuario_avaliacao ua
-                WHERE ua.id_usuario = u.id_usuario
-                AND ua.nota_total_obtida < (
-                    SELECT COALESCE(SUM(COALESCE(aq.pontuacao_especifica_na_avaliacao, q.valor_pontuacao)), 1)
+        SELECT u.id_usuario, u.nome
+        FROM usuarios u
+        WHERE u.tipo_usuario = 'ALUNO'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM usuario_avaliacao ua
+            WHERE ua.id_usuario = u.id_usuario
+            AND ua.status_resposta = 'CONCLUIDA'
+            AND (
+                ua.nota_total_obtida IS NULL
+                OR ua.nota_total_obtida < (
+                    SELECT COALESCE(SUM(COALESCE(aq.pontuacao_especifica_na_avaliacao, q.valor_pontuacao)), 0)
                     FROM avaliacao_questao aq
                     JOIN questoes q ON q.id_questao = aq.id_questao
                     WHERE aq.id_avaliacao = ua.id_avaliacao
                 )
             )
-            AND EXISTS (SELECT 1 FROM usuario_avaliacao WHERE id_usuario = u.id_usuario)
-        """;
+        )
+        AND EXISTS (
+            SELECT 1 
+            FROM usuario_avaliacao 
+            WHERE id_usuario = u.id_usuario 
+            AND status_resposta = 'CONCLUIDA'
+        )
+    """;
         return jdbcTemplate.query(sql, new RowMapper<Usuario>() {
             @Override
             public Usuario mapRow(ResultSet rs, int rowNum) throws SQLException {
